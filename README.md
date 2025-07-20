@@ -16,7 +16,7 @@ Simulador dos algoritmos de substituição de páginas FIFO e Ótimo, com modo d
    cd seurepositorio
 2. Compile o programa:
    ```bash
-   go build -o simulator main.go:  
+   go build -o simulator.exe main.go:  
 3. Prepare seu arquivo de entrada (ex: pages.txt), com uma página por linha, exemplo:
     ```nginx
     I0

@@ -59,7 +59,7 @@ func fifoAlgorithm(pageReferences []string, numFrames int, didacticMode bool) Si
 
 	for i, page := range pageReferences {
 		if didacticMode {
-			fmt.Printf("\n[FIFO - Passo %d] Acessando pagina: %s\n", i+1, page)
+			fmt.Printf("\n[FIFO - Passo %d] Acessando página: %s\n", i+1, page)
 		}
 
 		if _, found := pageInMmemorySet[page]; !found {
@@ -78,14 +78,14 @@ func fifoAlgorithm(pageReferences []string, numFrames int, didacticMode bool) Si
 			pageInMmemorySet[page] = struct{}{}
 
 			if didacticMode {
-				fmt.Printf("  -> FALTA DE PAGINA (FAULT)!\n")
+				fmt.Printf("  -> FALTA DE PáGINA (FAULT)!\n")
 				if evictedPage != "" {
-					fmt.Printf("     Pagina removida: %s\n", evictedPage)
+					fmt.Printf("     Página removida: %s\n", evictedPage)
 				}
-				fmt.Printf("     Pagina inserida: %s\n", page)
+				fmt.Printf("     Página inserida: %s\n", page)
 			}
 		} else if didacticMode {
-			fmt.Printf("  -> Pagina encontrada (HIT)!\n")
+			fmt.Printf("  -> Página encontrada (HIT)!\n")
 		}
 
 		if didacticMode {
@@ -117,7 +117,7 @@ func optimalAlgorithmOptimized(pageReferences []string, numFrames int, pagePosit
 
 	for i, page := range pageReferences {
 		if didacticMode {
-			fmt.Printf("\n[Otimo - Passo %d] Acessando pagina: %s\n", i+1, page)
+			fmt.Printf("\n[Ótimo - Passo %d] Acessando página: %s\n", i+1, page)
 		}
 
 		if _, found := pageInMmemorySet[page]; !found {
@@ -162,14 +162,14 @@ func optimalAlgorithmOptimized(pageReferences []string, numFrames int, pagePosit
 			}
 
 			if didacticMode {
-				fmt.Printf("  -> FALTA DE PAGINA (FAULT)!\n")
+				fmt.Printf("  -> FALTA DE PáGINA (FAULT)!\n")
 				if evictedPage != "" {
-					fmt.Printf("     Pagina removida: %s\n", evictedPage)
+					fmt.Printf("     Página removida: %s\n", evictedPage)
 				}
-				fmt.Printf("     Pagina inserida: %s\n", page)
+				fmt.Printf("     Página inserida: %s\n", page)
 			}
 		} else if didacticMode {
-			fmt.Printf("  -> Pagina encontrada (HIT)!\n")
+			fmt.Printf("  -> Página encontrada (HIT)!\n")
 		}
 
 		if didacticMode {
@@ -202,9 +202,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	filePath := args[0]
 	memorySizeStr := args[1]
 
+	const pageSizeBytes = 4 * 1024 // Cada página tem 4KB
+	physicalMemoryBytes, _ := parseMemorySize(memorySizeStr)
+
+	if physicalMemoryBytes < pageSizeBytes {
+		fmt.Fprintf(os.Stderr, "Tamanho de memória deve ser maior que 4KB. Uso: %s [--didatico] <arquivo_de_entrada> <tamanho_memoria>\n", os.Args[0])
+		os.Exit(1)
+	}
+
+	filePath := args[0]
+	
 	// Leitura do arquivo de referências
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -227,8 +236,6 @@ func main() {
 	}
 	fmt.Println("Pre-processamento concluido.")
 
-	const pageSizeBytes = 4 * 1024 // Cada página tem 4KB
-	physicalMemoryBytes, _ := parseMemorySize(memorySizeStr)
 	numFrames := int(physicalMemoryBytes / pageSizeBytes)
 
 	// Contar páginas distintas para calcular tamanho da tabela
@@ -243,31 +250,27 @@ func main() {
 
 	var optimalResult, fifoResult SimulationResult
 
-	if didacticMode {
-		if len(pageReferences) > 1000 {
-			fmt.Println("AVISO: O modo didatico com muitas referencias pode gerar saida muito longa!")
-		}
-		fifoResult = fifoAlgorithm(pageReferences, numFrames, true)
-		optimalResult = optimalAlgorithmOptimized(pageReferences, numFrames, pagePositions, true)
-	} else {
-		optimalResult = optimalAlgorithmOptimized(pageReferences, numFrames, pagePositions, false)
-		fifoResult = fifoAlgorithm(pageReferences, numFrames, false)
+	if didacticMode && len(pageReferences) > 1000 {
+		fmt.Println("AVISO: O modo didatico com muitas referencias pode gerar saida muito longa!")
 	}
+
+	optimalResult = optimalAlgorithmOptimized(pageReferences, numFrames, pagePositions, didacticMode)
+	fifoResult = fifoAlgorithm(pageReferences, numFrames, didacticMode)
 
 	// Impressão de estatísticas
 	fmt.Println("\n--- RESULTADO DA SIMULACAO ---")
-	fmt.Printf("A memoria fisica comporta %d paginas.\n", numFrames)
-	fmt.Printf("Ha %d paginas distintas no arquivo.\n", distinctPagesCount)
-	fmt.Printf("Tamanho estimado da Tabela de Paginas (1 nivel): %d bytes (%d entradas * %d bytes/entrada)\n", tableSize, distinctPagesCount, sizeOfPTE)
+	fmt.Printf("A memória física comporta %d páginas.\n", numFrames)
+	fmt.Printf("Ha %d páginas distintas no arquivo.\n", distinctPagesCount)
+	fmt.Printf("Tamanho estimado da Tabela de Páginas (1 nivel): %d bytes (%d entradas * %d bytes/entrada)\n", tableSize, distinctPagesCount, sizeOfPTE)
 
-	fmt.Printf("Com o algoritmo Otimo ocorrem %d faltas de pagina.\n", optimalResult.pageFaults)
-	fmt.Printf("Com o algoritmo FIFO ocorrem %d faltas de pagina,\n", fifoResult.pageFaults)
+	fmt.Printf("Com o algoritmo Ótimo ocorrem %d faltas de página.\n", optimalResult.pageFaults)
+	fmt.Printf("Com o algoritmo FIFO ocorrem %d faltas de página,\n", fifoResult.pageFaults)
 
 	efficiency := 100.0
 	if fifoResult.pageFaults > 0 {
 		efficiency = (float64(optimalResult.pageFaults) / float64(fifoResult.pageFaults)) * 100.0
 	}
-	fmt.Printf("atingindo %.2f%% do desempenho do Otimo.\n", efficiency)
+	fmt.Printf("atingindo %.2f%% do desempenho do Ótimo.\n", efficiency)
 
 	// Pergunta se deseja imprimir estatísticas por página
 	fmt.Print("Deseja listar o numero de carregamentos (s/n)? ")
@@ -284,7 +287,7 @@ func main() {
 		}
 		sort.Strings(distinctPages)
 
-		fmt.Println("\nPagina\tOtimo\tFIFO")
+		fmt.Println("\nPágina\tÓtimo\tFIFO")
 		fmt.Println("------\t-----\t----")
 		for _, page := range distinctPages {
 			optCount := optimalResult.loadCounts[page]
